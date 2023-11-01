@@ -11,3 +11,9 @@ Pythonバージョンは3.11.3を使用
 
 ### 参考リンク
 - https://keras.io/examples/generative/vae/
+
+## GAN
+実装: [generative_adversarial_network](GAN/generative_adversarial_network.py)
+
+### 参考リンク
+- https://keras.io/examples/generative/dcgan_overriding_train_step/ 
