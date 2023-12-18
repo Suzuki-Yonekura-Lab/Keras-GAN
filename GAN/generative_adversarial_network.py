@@ -2,9 +2,6 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
-import os
-import gdown
-from zipfile import ZipFile
 
 
 # ハイパーパラメータ
@@ -131,7 +128,7 @@ class GANMonitor(keras.callbacks.Callback):
         generated_images.numpy()
         for i in range(self.num_img):
             img = keras.utils.array_to_img(generated_images[i])
-            img.save("generated_img_%03d_%d.png" % (epoch, i))
+            img.save("GAN/output/generated_img_%03d_%d.png" % (epoch, i))
 
 def plot_latent_space(gan, n=30, figsize=15):
     # display an n*n 2D manifold of digits
