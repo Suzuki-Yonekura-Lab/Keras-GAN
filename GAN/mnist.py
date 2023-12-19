@@ -1,3 +1,4 @@
+import csv
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
@@ -6,7 +7,7 @@ import matplotlib.pyplot as plt
 
 # ハイパーパラメータ
 BATCH_SIZE = 32
-LATENT_DIM = 128
+LATENT_DIM = 2
 EPOCHS = 50
 
 # Discriminator 作成
@@ -130,6 +131,26 @@ class GANMonitor(keras.callbacks.Callback):
             img = keras.utils.array_to_img(generated_images[i])
             img.save("GAN/output/generated_img_%03d_%d.png" % (epoch, i))
 
+
+class LossCSVLogger(keras.callbacks.Callback):
+    def __init__(self, filename):
+        super().__init__()
+        self.filename = filename
+        self.d_losses = []
+        self.g_losses = []
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.d_losses.append(logs.get('d_loss'))
+        self.g_losses.append(logs.get('g_loss'))
+
+    def on_train_end(self, logs=None):
+        with open(self.filename, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['d_loss', 'g_loss'])
+            for d_loss, g_loss in zip(self.d_losses, self.g_losses):
+                writer.writerow([d_loss, g_loss])
+
+
 def plot_latent_space(gan, n=30, figsize=15):
     # display an n*n 2D manifold of digits
     digit_size = 28
@@ -206,8 +227,11 @@ if __name__ == "__main__":
     gan.fit(
         mnist_digits,
         epochs=EPOCHS,
-        callbacks=[GANMonitor(num_img=10, latent_dim=LATENT_DIM)],
+        callbacks=[
+            GANMonitor(num_img=10, latent_dim=LATENT_DIM),
+            LossCSVLogger(filename="GAN/output/loss_log.csv")
+        ],
     )
 
     # 潜在空間のビジュアライズ
-    # plot_latent_space(gan)
+    plot_latent_space(gan)

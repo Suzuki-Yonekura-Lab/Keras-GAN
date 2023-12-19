@@ -1,3 +1,4 @@
+import csv
 import numpy as np
 import tensorflow as tf
 from tensorflow import keras
@@ -105,6 +106,26 @@ class VAEMonitor(keras.callbacks.Callback):
             img.save("VAE/output/generated_img_%03d_%d.png" % (epoch, i))
 
 
+class LossCSVLogger(keras.callbacks.Callback):
+    def __init__(self, filename):
+        self.filename = filename
+        self.csv_file = None
+        self.csv_writer = None
+
+    def on_train_begin(self, logs=None):
+        self.csv_file = open(self.filename, mode='w')
+        self.csv_writer = csv.writer(self.csv_file)
+        self.csv_writer.writerow(['epoch', 'loss', 'reconstruction_loss', 'kl_loss'])
+
+    def on_epoch_end(self, epoch, logs=None):
+        row = [epoch, logs['loss'], logs['reconstruction_loss'], logs['kl_loss']]
+        self.csv_writer.writerow(row)
+        self.csv_file.flush()
+
+    def on_train_end(self, logs=None):
+        self.csv_file.close()
+
+
 def plot_latent_space(vae, n=30, figsize=15):
     # display an n*n 2D manifold of digits
     digit_size = 28
@@ -162,7 +183,10 @@ if __name__ == "__main__":
         mnist_digits,
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
-        callbacks=[VAEMonitor(num_img=10, latent_dim=LATENT_DIM)],
+        callbacks=[
+            VAEMonitor(num_img=10, latent_dim=LATENT_DIM),
+            LossCSVLogger(filename="VAE/output/loss_log.csv"),
+        ],
     )
 
     # 潜在空間のビジュアライズ
