@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 
 # ハイパーパラメータ
-BATCH_SIZE = 32
-LATENT_DIM = 2
+BATCH_SIZE = 128
+LATENT_DIM = 128
 EPOCHS = 50
 LAMBDA_GP = 1.
 
@@ -142,7 +142,7 @@ class GANMonitor(keras.callbacks.Callback):
         generated_images.numpy()
         for i in range(self.num_img):
             img = keras.utils.array_to_img(generated_images[i])
-            img.save("GAN/output/generated_img_%03d_%d.png" % (epoch, i))
+            img.save("wGAN-gp/output/generated_img_%03d_%d.png" % (epoch, i))
 
 
 class LossCSVLogger(keras.callbacks.Callback):
@@ -199,8 +199,14 @@ def plot_latent_space(gan, n=30, figsize=15):
 
 
 if __name__ == "__main__":
+    import os
     import numpy as np
 
+
+    output_dir = "wGAN-gp/output"
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     (x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
     mnist_digits = np.concatenate([x_train, x_test], axis=0)
@@ -217,9 +223,10 @@ if __name__ == "__main__":
     gan.fit(
         mnist_digits,
         epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
         callbacks=[
             GANMonitor(num_img=10, latent_dim=LATENT_DIM),
-            LossCSVLogger(filename="GAN/output/loss_log.csv")
+            LossCSVLogger(filename="wGAN-gp/output/loss_log.csv")
         ],
     )
 
