@@ -142,7 +142,7 @@ class GANMonitor(keras.callbacks.Callback):
         generated_images.numpy()
         for i in range(self.num_img):
             img = keras.utils.array_to_img(generated_images[i])
-            img.save("wGAN-gp/output/generated_img_%03d_%d.png" % (epoch, i))
+            img.save("WGAN-gp/output/generated_img_%03d_%d.png" % (epoch, i))
 
 
 class LossCSVLogger(keras.callbacks.Callback):
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     import numpy as np
 
 
-    output_dir = "wGAN-gp/output"
+    output_dir = "WGAN-gp/output"
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -226,7 +226,7 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE,
         callbacks=[
             GANMonitor(num_img=10, latent_dim=LATENT_DIM),
-            LossCSVLogger(filename="wGAN-gp/output/loss_log.csv")
+            LossCSVLogger(filename="WGAN-gp/output/loss_log.csv")
         ],
     )
 
