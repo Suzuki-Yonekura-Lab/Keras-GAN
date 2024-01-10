@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 BATCH_SIZE = 32
 LATENT_DIM = 2
 EPOCHS = 50
+LAMBDA_GP = 1.
 
 # Discriminator 作成
 discriminator = keras.Sequential(
@@ -22,7 +23,7 @@ discriminator = keras.Sequential(
         layers.LeakyReLU(alpha=0.2),
         layers.Flatten(),
         layers.Dropout(0.2),
-        layers.Dense(1, activation="sigmoid"),
+        layers.Dense(1),
     ],
     name="discriminator",
 )
