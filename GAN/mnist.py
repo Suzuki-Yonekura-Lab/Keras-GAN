@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 # ハイパーパラメータ
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 LATENT_DIM = 2
 EPOCHS = 50
 
@@ -186,6 +186,7 @@ def plot_latent_space(gan, n=30, figsize=15):
 
 
 if __name__ == "__main__":
+    import os
     import numpy as np
     # データセット用意
     # dataset_dir = "celeba_gan"
@@ -212,6 +213,11 @@ if __name__ == "__main__":
     #     plt.imshow((x.numpy() * 255).astype("int32")[0])
     #     break
 
+    output_dir = "GAN/output"
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
     (x_train, _), (x_test, _) = keras.datasets.mnist.load_data()
     mnist_digits = np.concatenate([x_train, x_test], axis=0)
     mnist_digits = np.expand_dims(mnist_digits, -1).astype("float32") / 255
@@ -227,6 +233,7 @@ if __name__ == "__main__":
     gan.fit(
         mnist_digits,
         epochs=EPOCHS,
+        batch_size=BATCH_SIZE,
         callbacks=[
             GANMonitor(num_img=10, latent_dim=LATENT_DIM),
             LossCSVLogger(filename="GAN/output/loss_log.csv")
