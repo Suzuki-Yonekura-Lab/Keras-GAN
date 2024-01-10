@@ -44,6 +44,16 @@ generator = keras.Sequential(
 generator.summary()
 
 
+def discriminator_loss(real_img, fake_img):
+    real_loss = tf.reduce_mean(real_img)
+    fake_loss = tf.reduce_mean(fake_img)
+    return fake_loss - real_loss
+
+
+def generator_loss(fake_img):
+    return -tf.reduce_mean(fake_img)
+
+
 # GAN
 class GAN(keras.Model):
     def __init__(self, discriminator, generator, latent_dim):
@@ -70,46 +80,48 @@ class GAN(keras.Model):
     def train_step(self, real_images):
         batch_size = tf.shape(real_images)[0]
 
-        # 潜在空間状の点をサンプリング
+        # 潜在空間からのサンプリング
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
 
-        # 偽画像作成
-        generated_images = self.generator(random_latent_vectors)
+        # 生成器で偽画像を生成
+        generated_images = self.generator(random_latent_vectors, training=True)
 
-        # 偽画像と真画像を一つに
-        combined_images = tf.concat([generated_images, real_images], axis=0)
+        # 補間データの生成
+        alpha = tf.random.uniform([batch_size, 1, 1, 1], 0., 1.)
+        interpolated_images = alpha * real_images + (1 - alpha) * generated_images
 
-        # 真 -> 0, 偽 -> 1
-        labels = tf.concat(
-            [tf.ones((batch_size, 1)), tf.zeros((batch_size, 1))], axis=0
-        )
-
-        # ランダムノイズをラベルに付与
-        labels += 0.05 * tf.random.uniform(tf.shape(labels))
-
-        # train the discriminator
         with tf.GradientTape() as tape:
-            predictions = self.discriminator(combined_images)
-            d_loss = self.loss_fn(labels, predictions)
-        grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
-        self.d_optimizer.apply_gradients(
-            zip(grads, self.discriminator.trainable_weights)
-        )
+            # 識別器の損失計算
+            real_output = self.discriminator(real_images, training=True)
+            fake_output = self.discriminator(generated_images, training=True)
+            d_loss = discriminator_loss(real_output, fake_output)
 
-        # 潜在空間状の点をサンプリング
+            # 勾配罰則の計算
+            with tf.GradientTape() as gp_tape:
+                gp_tape.watch(interpolated_images)
+                interpolated_output = self.discriminator(interpolated_images, training=True)
+            grads = gp_tape.gradient(interpolated_output, [interpolated_images])[0]
+            norm_grads = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2, 3]))
+            gradient_penalty = tf.reduce_mean((norm_grads - 1.0) ** 2)
+            d_loss += LAMBDA_GP * gradient_penalty
+
+        # 識別器の勾配更新
+        d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
+        self.d_optimizer.apply_gradients(zip(d_grads, self.discriminator.trainable_weights))
+
+        # 生成器のトレーニング
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
-
-        # 全部真画像のラベルを用意
         misleading_labels = tf.zeros((batch_size, 1))
 
-        # train the generator
         with tf.GradientTape() as tape:
-            predictions = self.discriminator(self.generator(random_latent_vectors))
-            g_loss = self.loss_fn(misleading_labels, predictions)
-        grads = tape.gradient(g_loss, self.generator.trainable_weights)
-        self.g_optimizer.apply_gradients(zip(grads, self.generator.trainable_weights))
+            fake_output = self.discriminator(self.generator(random_latent_vectors, training=True), training=True)
+            g_loss = generator_loss(fake_output)
 
-        # update metrics
+        # 生成器の勾配更新
+        g_grads = tape.gradient(g_loss, self.generator.trainable_weights)
+        self.g_optimizer.apply_gradients(zip(g_grads, self.generator.trainable_weights))
+
+        # メトリクスの更新
         self.d_loss_metric.update_state(d_loss)
         self.g_loss_metric.update_state(g_loss)
         return {
