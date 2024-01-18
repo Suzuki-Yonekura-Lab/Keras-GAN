@@ -63,10 +63,10 @@ generator.summary()
 
 
 # 生成器のアーキテクチャ図を生成
-plot_model(generator, to_file='generator_model_v2.png', show_shapes=True, show_layer_names=True)
+plot_model(generator, to_file='WGAN-gp/output/architecture/generator_model_v2.png', show_shapes=True, show_layer_names=True)
 
 # 識別器のアーキテクチャ図を生成
-plot_model(discriminator, to_file='discriminator_model_v2.png', show_shapes=True, show_layer_names=True)
+plot_model(discriminator, to_file='WGAN-gp/output/architecture/discriminator_model_v2.png', show_shapes=True, show_layer_names=True)
 
 
 def discriminator_loss(real_img, fake_img):
