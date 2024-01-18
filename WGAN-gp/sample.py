@@ -4,6 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.utils import plot_model
 import matplotlib.pyplot as plt
 
 
@@ -24,6 +25,7 @@ def load_dataset(image_dir, image_size=(128, 128)):
     return np.array(images)
 
 # Discriminator 作成
+# Total params: 427329
 discriminator = keras.Sequential(
     [
         keras.Input(shape=(128, 128, 1)),
@@ -42,6 +44,7 @@ discriminator = keras.Sequential(
 discriminator.summary()
 
 # Generator 作成
+# Total params: 4621505
 generator = keras.Sequential(
     [
         keras.Input(shape=(LATENT_DIM,)),
@@ -56,6 +59,12 @@ generator = keras.Sequential(
     name="generator",
 )
 generator.summary()
+
+# 生成器のアーキテクチャ図を生成
+plot_model(generator, to_file='generator_model_v1.png', show_shapes=True, show_layer_names=True)
+
+# 識別器のアーキテクチャ図を生成
+plot_model(discriminator, to_file='discriminator_model_v1.png', show_shapes=True, show_layer_names=True)
 
 
 def discriminator_loss(real_img, fake_img):
@@ -244,4 +253,4 @@ if __name__ == "__main__":
     )
 
     # 潜在空間のビジュアライズ
-    plot_latent_space(gan)
+    # plot_latent_space(gan)
