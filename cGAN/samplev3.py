@@ -225,7 +225,7 @@ class GANMonitor(keras.callbacks.Callback):
             # 画像を保存
             for i in range(self.num_img_per_label):
                 img = keras.preprocessing.image.array_to_img(generated_images[i])
-                img.save("cGAN/output/samplev2/generated_img_%03d_label_%d_%d.png" % (epoch, label, i))
+                img.save("cGAN/output/samplev3/generated_img_%03d_label_%d_%d.png" % (epoch, label, i))
 
 
 
