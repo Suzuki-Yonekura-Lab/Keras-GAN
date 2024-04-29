@@ -141,29 +141,33 @@ class GAN(keras.Model):
             self.g_loss_metric,
         ]
 
-    def train_step(self, real_images):
+    def train_step(self, data):
+        real_images, labels = data
+        
         batch_size = tf.shape(real_images)[0]
+        labels = tf.reshape(labels, (batch_size, 1))  # ラベルの形状を調整
 
         # 潜在空間からのサンプリング
         random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
+        combined_inputs = [random_latent_vectors, labels]
 
         # 生成器で偽画像を生成
-        generated_images = self.generator(random_latent_vectors, training=True)
+        generated_images = self.generator(combined_inputs, training=True)
 
         # 補間データの生成
         alpha = tf.random.uniform([batch_size, 1, 1, 1], 0., 1.)
         interpolated_images = alpha * real_images + (1 - alpha) * generated_images
 
         with tf.GradientTape() as tape:
-            # 識別器の損失計算
-            real_output = self.discriminator(real_images, training=True)
-            fake_output = self.discriminator(generated_images, training=True)
+            # 識別器の損失計算（実画像と生成画像、両方にラベルを適用）
+            real_output = self.discriminator([real_images, labels], training=True)
+            fake_output = self.discriminator([generated_images, labels], training=True)
             d_loss = discriminator_loss(real_output, fake_output)
 
             # 勾配罰則の計算
             with tf.GradientTape() as gp_tape:
                 gp_tape.watch(interpolated_images)
-                interpolated_output = self.discriminator(interpolated_images, training=True)
+                interpolated_output = self.discriminator([interpolated_images, labels], training=True)
             grads = gp_tape.gradient(interpolated_output, [interpolated_images])[0]
             norm_grads = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2, 3]))
             gradient_penalty = tf.reduce_mean((norm_grads - 1.0) ** 2)
@@ -173,12 +177,13 @@ class GAN(keras.Model):
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         self.d_optimizer.apply_gradients(zip(d_grads, self.discriminator.trainable_weights))
 
-        # 生成器のトレーニング
-        random_latent_vectors = tf.random.normal(shape=(batch_size, self.latent_dim))
-        misleading_labels = tf.zeros((batch_size, 1))
-
+        # 生成器のトレーニング（再度ラベルを結合して偽画像生成）
         with tf.GradientTape() as tape:
-            fake_output = self.discriminator(self.generator(random_latent_vectors, training=True), training=True)
+            # 潜在ベクトルとラベルを組み合わせた入力から偽画像を生成
+            generated_images = self.generator([random_latent_vectors, labels], training=True)
+            # 生成された偽画像と実画像のラベルを識別器に入力し、識別器の出力を得る
+            fake_output = self.discriminator([generated_images, labels], training=True)
+            # 生成器の損失を計算（識別器を騙すための損失）
             g_loss = generator_loss(fake_output)
 
         # 生成器の勾配更新
@@ -195,18 +200,32 @@ class GAN(keras.Model):
 
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, num_img=3, latent_dim=128):
-        self.num_img = num_img
+    def __init__(self, num_img_per_label=3, latent_dim=128, num_classes=3):
+        self.num_img_per_label = num_img_per_label
         self.latent_dim = latent_dim
+        self.num_classes = num_classes
 
     def on_epoch_end(self, epoch, logs=None):
-        random_latent_vectors = tf.random.normal(shape=(self.num_img, self.latent_dim))
-        generated_images = self.model.generator(random_latent_vectors)
-        generated_images *= 255
-        generated_images.numpy()
-        for i in range(self.num_img):
-            img = keras.utils.array_to_img(generated_images[i])
-            img.save("WGAN-gp/output/samplev4/generated_img_%03d_%d.png" % (epoch, i))
+        # 各ラベルについて、num_img_per_label個の画像を生成
+        for label in range(self.num_classes):
+            # 当該ラベルの繰り返し
+            labels = tf.constant([label] * self.num_img_per_label)
+            labels = tf.reshape(labels, (self.num_img_per_label, 1))  # ラベルの形状を調整
+
+            # 潜在空間からのランダムベクトル生成
+            random_latent_vectors = tf.random.normal(shape=(self.num_img_per_label, self.latent_dim))
+
+            # 条件付きで偽画像を生成
+            generated_images = self.model.generator([random_latent_vectors, labels], training=False)
+            generated_images = (generated_images * 127.5) + 127.5  # [-1, 1]から[0, 255]へスケール変換
+            generated_images = tf.cast(generated_images, tf.uint8)  # 整数型へ変換
+
+            # 画像を保存
+            for i in range(self.num_img_per_label):
+                img = keras.preprocessing.image.array_to_img(generated_images[i])
+                img.save("cGAN/output/samplev2/generated_img_%03d_label_%d_%d.png" % (epoch, label, i))
+
+
 
 
 class LossCSVLogger(keras.callbacks.Callback):
@@ -269,8 +288,9 @@ if __name__ == "__main__":
 
     # 新しいデータセットの読み込み
     image_dir = 'cGAN/datasets'  # データセットのディレクトリ
-    dataset = load_dataset(image_dir)
-    print("Dataset shape:", dataset[0].shape)
+    images, labels = load_dataset(image_dir)
+    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+    dataset = dataset.shuffle(buffer_size=len(images)).batch(BATCH_SIZE)
 
     output_dir = "cGAN/output/sample"
 
@@ -295,7 +315,7 @@ if __name__ == "__main__":
         epochs=EPOCHS,
         batch_size=BATCH_SIZE,
         callbacks=[
-            GANMonitor(num_img=10, latent_dim=LATENT_DIM),
+            GANMonitor(latent_dim=LATENT_DIM),
             LossCSVLogger(filename="WGAN-gp/output/samplev4/loss_log.csv")
         ],
     )
