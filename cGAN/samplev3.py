@@ -315,10 +315,9 @@ if __name__ == "__main__":
     gan.fit(
         dataset,
         epochs=EPOCHS,
-        batch_size=BATCH_SIZE,
         callbacks=[
             GANMonitor(latent_dim=LATENT_DIM),
-            LossCSVLogger(filename="WGAN-gp/output/samplev4/loss_log.csv")
+            LossCSVLogger(filename="cGAN/output/samplev3/loss_log.csv")
         ],
     )
 
