@@ -16,7 +16,7 @@ def draw_circle(img, centers, radiuses):
         cv2.circle(img, (x_center, y_center), radius, (255, 255, 255), thickness=-1)
 
 # Paths and directories
-OUTPUT_DIR = 'WGAN-gp/datasets/cgan'
+OUTPUT_DIR = 'cGAN_practice/datasets'
 sub_dirs = ["circle1", "circle2", "circle3"]
 for sub_dir in sub_dirs:
     path = os.path.join(OUTPUT_DIR, sub_dir)
@@ -24,7 +24,7 @@ for sub_dir in sub_dirs:
         os.makedirs(path)
 
 # Image parameters
-img_qty = 512
+img_qty = 2048
 height, width = 128, 128
 min_radius = 20
 
@@ -36,7 +36,7 @@ for img_id in range(img_qty):
         centers = []
         radiuses = []
         attempts = 0
-        max_attempts = 1000  # Maximum attempts to place circles
+        max_attempts = 3000  # Maximum attempts to place circles
 
         while len(centers) < num_circles and attempts < max_attempts:
             x_center, y_center = rng.integers(min_radius + 1, height - min_radius - 1, 2)

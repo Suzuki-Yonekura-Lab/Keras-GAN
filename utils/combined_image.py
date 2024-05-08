@@ -4,7 +4,8 @@ from PIL import Image, ImageDraw, ImageFont
 
 def combine(num, output_name):
     # 9つの画像のファイル名をリストに格納する
-    image_files = ["WGAN-gp/output/" + output_name + "/generated_img_{:03d}_{}.png".format(num-1, n) for n in range(1, 10)]
+    # image_files = ["cGAN/output/" + output_name + "/generated_img_{:03d}_label_{}_{}.png".format(num-1, n, m) for n in range(3) for m in range(3)]
+    image_files = ["cGAN/" + output_name + "/generated_img_label_{}_{}.png".format(num-1, m) for m in range(9)]
 
     # 9つの画像を読み込む
     images = [Image.open(filename) for filename in image_files]
@@ -19,17 +20,17 @@ def combine(num, output_name):
         new_image.paste(image, (image.width * col, image.height * row))
 
     # 新しい画像を保存する
-    output_dir = "utils/output/" + output_name
+    output_dir = "utils/output/cgan/" + output_name
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     new_image.save(output_dir + "/combined_image" + str(num) + ".png")
 
 
-def combine_images(nums, output_name):
+def combine_images(nums, radius, output_name):
     # 各画像のファイル名をリストに格納する
     image_files = [
-        "utils/output/" + output_name + f"/combined_image{num}.png" for num in nums
+        "utils/output/cgan/" + output_name + f"/combined_image_epoch{num}_radius_{radius}.png" for num in nums
     ]
 
     # 画像を読み込む
@@ -61,26 +62,28 @@ def combine_images(nums, output_name):
 
             # タイトル（エポック番号）を追加
             draw = ImageDraw.Draw(final_image)
-            draw.text((x_offset, y_offset + image.height), f"Epoch {nums[index]}", fill="black", font=font)
+            draw.text((x_offset, y_offset + image.height), f"Epoch {index}", fill="black", font=font)
 
             x_offset += image.width + spacing
         y_offset += images[i * 3].height + spacing + title_space
 
     # 最終的な画像を保存するディレクトリを設定
-    output_dir = "utils/output/" + output_name
+    output_dir = "utils/output/cgan/" + output_name
 
     # ディレクトリが存在しない場合は作成
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
     # 画像を保存する
-    final_image_path = output_dir + "/combined_vertical_horizontal_with_titles.png"
+    final_image_path = output_dir + f"/combined_vertical_horizontal_radius_{radius}.png"
     final_image.save(final_image_path)
 
 
 # 6つの異なる組み合わせ
-nums = [1, 10, 20, 30, 40, 50]
-output_name = "gan-batch128-epoch50-latent128-data3072"
+# nums = [1, 10, 20, 30, 40, 50]
+nums = [1, 2, 3]
+# output_name = "samplev3-batch128-epoch50-lambda20-latent128-data6144"
+output_name = "generated_images"
 
 for num in nums:
     combine(num, output_name)

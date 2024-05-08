@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 BATCH_SIZE = 128
 LATENT_DIM = 128
 EPOCHS = 50
-LAMBDA_GP = 10
+LAMBDA_GP = 20
 
 
 def load_dataset(image_dir, image_size=(128, 128)):
