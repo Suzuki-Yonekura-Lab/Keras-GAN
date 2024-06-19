@@ -1,30 +1,25 @@
 import os
-from matplotlib import pyplot as plt
-import numpy as np
 import cv2
-import random
+import matplotlib.pyplot as plt
 
-# Paths and directories
-OUTPUT_DIR = 'cGAN_practice/datasets/images'
+# ディレクトリの設定
+directories = ['cGAN/archive-datasets/circle1', 'cGAN/archive-datasets/circle2', 'cGAN/archive-datasets/circle3']
+titles = ["1 circle", "2 circles", "3 circles"]  # 各カラムのタイトル
 
-# Image parameters
-img_qty = 9
-height, width = 128, 128
+# 各ディレクトリから画像を読み込む
+image_files = [os.path.join(dir, f"{i}.png") for dir in directories for i in range(3)]
 
-# Get all image paths
-all_images = [os.path.join(OUTPUT_DIR, img) for img in os.listdir(OUTPUT_DIR) if img.endswith('.png')]
+# 画像を表示するための3x3グリッドを作成
+fig, axes = plt.subplots(3, 3, figsize=(10, 15))  # サイズを調整して見やすくする
 
-# Randomly select 9 images
-selected_images = random.sample(all_images, img_qty)
+for col, title in enumerate(titles):
+    axes[0, col].set_title(title, fontsize=20)  # 各カラムのタイトルを設定
 
-# Create a 3x3 grid of images
-fig, axes = plt.subplots(3, 3, figsize=(10, 10))
+for i, img_path in enumerate(image_files):
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  # グレースケールで画像を読み込む
+    ax = axes[i % 3, i // 3]  # カラムごとに縦に並べる
+    ax.imshow(img, cmap='gray')  # グレースケール画像として表示
+    ax.axis('off')  # 軸を非表示にする
 
-for i, img_path in enumerate(selected_images):
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    ax = axes[i//3, i%3]
-    ax.imshow(img, cmap='gray')
-    ax.axis('off')
-
-plt.tight_layout()
-plt.show()
+plt.tight_layout()  # レイアウトの調整
+plt.show()  # 画像の表示

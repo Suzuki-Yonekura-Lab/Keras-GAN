@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 # ハイパーパラメータ
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 LATENT_DIM = 128
 EPOCHS = 100000
 LAMBDA_GP = 20
@@ -87,10 +87,10 @@ generator.summary()
 
 
 # 生成器のアーキテクチャ図を生成
-plot_model(generator, to_file='cGAN/output/architecture/generator_model_v2.png', show_shapes=True, show_layer_names=True)
+# plot_model(generator, to_file='cGAN/output/architecture/generator_model_v2.png', show_shapes=True, show_layer_names=True)
 
 # 識別器のアーキテクチャ図を生成
-plot_model(discriminator, to_file='cGAN/output/architecture/discriminator_model_v2.png', show_shapes=True, show_layer_names=True)
+# plot_model(discriminator, to_file='cGAN/output/architecture/discriminator_model_v2.png', show_shapes=True, show_layer_names=True)
 
 
 
@@ -111,6 +111,7 @@ class GAN(keras.Model):
         self.discriminator = discriminator
         self.generator = generator
         self.latent_dim = latent_dim
+        self.train_step_counter = 0
 
     def compile(self, d_optimizer, g_optimizer):
         super().compile()
@@ -173,19 +174,22 @@ class GAN(keras.Model):
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         self.d_optimizer.apply_gradients(zip(d_grads, self.discriminator.trainable_weights))
 
-        with tf.GradientTape() as tape:
-            generated_images = self.generator(generator_input, training=True)
-            discriminator_fake_input = tf.concat([generated_images, labels_images], axis=-1)
-            fake_output = self.discriminator(discriminator_fake_input, training=True)
-            g_loss = generator_loss(fake_output)
+        if self.train_step_counter % 2 == 0:
+            with tf.GradientTape() as tape:
+                generated_images = self.generator(generator_input, training=True)
+                discriminator_fake_input = tf.concat([generated_images, labels_images], axis=-1)
+                fake_output = self.discriminator(discriminator_fake_input, training=True)
+                g_loss = generator_loss(fake_output)
 
-        # 生成器の勾配更新
-        g_grads = tape.gradient(g_loss, self.generator.trainable_weights)
-        self.g_optimizer.apply_gradients(zip(g_grads, self.generator.trainable_weights))
+            # 生成器の勾配更新
+            g_grads = tape.gradient(g_loss, self.generator.trainable_weights)
+            self.g_optimizer.apply_gradients(zip(g_grads, self.generator.trainable_weights))
+
+            # メトリクスの更新
+            self.g_loss_metric.update_state(g_loss)
 
         # メトリクスの更新
         self.d_loss_metric.update_state(d_loss)
-        self.g_loss_metric.update_state(g_loss)
         return {
             "d_loss": self.d_loss_metric.result(),
             "g_loss": self.g_loss_metric.result(),
@@ -223,7 +227,7 @@ class GANMonitor(keras.callbacks.Callback):
             # 画像を保存
             for i in range(self.num_img_per_label):
                 img = keras.preprocessing.image.array_to_img(generated_images[i])
-                img.save("cGAN/output/samplev4/generated_img_%03d_label_%d_%d.png" % (epoch+181, label, i))
+                img.save("cGAN/output/samplev4/generated_img_%03d_label_%d_%d.png" % (epoch, label, i))
 
 
 class LossCSVLogger(keras.callbacks.Callback):
@@ -306,9 +310,9 @@ if __name__ == "__main__":
     )
 
     # モデルの重みを読み込む
-    load_dir = "samplev4-batch128-epoch100000-lambda20-latent128-data6144-weights"
-    gan.generator.load_weights(os.path.join(load_dir, 'generator_weights.h5'))
-    gan.discriminator.load_weights(os.path.join(load_dir, 'discriminator_weights.h5'))
+    # load_dir = "samplev4-batch128-epoch100000-lambda20-latent128-data6144-weights"
+    # gan.generator.load_weights(os.path.join(load_dir, 'generator_weights.h5'))
+    # gan.discriminator.load_weights(os.path.join(load_dir, 'discriminator_weights.h5'))
 
     gan.fit(
         dataset,

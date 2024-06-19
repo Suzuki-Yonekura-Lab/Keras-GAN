@@ -16,7 +16,7 @@ def draw_circle(img, centers, radiuses):
         cv2.circle(img, (x_center, y_center), radius, (255, 255, 255), thickness=-1)
 
 # Paths and directories
-OUTPUT_DIR = 'cGAN_practice/datasets'
+OUTPUT_DIR = 'cGAN/datasets'
 sub_dirs = ["circle1", "circle2", "circle3"]
 for sub_dir in sub_dirs:
     path = os.path.join(OUTPUT_DIR, sub_dir)
@@ -24,9 +24,9 @@ for sub_dir in sub_dirs:
         os.makedirs(path)
 
 # Image parameters
-img_qty = 2048
-height, width = 128, 128
-min_radius = 20
+img_qty = 512
+height, width = 64, 64
+min_radius = 5
 
 # Generate images with circles
 rng = np.random.default_rng(0)
