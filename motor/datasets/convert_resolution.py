@@ -1,11 +1,11 @@
 import os
-import shutil
 import cv2
 
 # 元のディレクトリのリスト
-source_dirs = [f'motor/datasets/raw/model0/seed{i}' for i in range(13)]
+source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) for i in range(13)]
+
 # 新しいディレクトリ
-target_dir = 'motor/datasets/64x64'
+target_dir = 'motor/datasets/64x64_model0123'
 
 # 新しいディレクトリが存在しない場合は作成
 if not os.path.exists(target_dir):
