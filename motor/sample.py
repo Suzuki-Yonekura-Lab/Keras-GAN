@@ -29,9 +29,9 @@ def load_dataset(image_dir, label_path, image_size=(64, 64)):
     # magnet_areaのlabelを取得
     df = pd.read_csv(label_path)
     magnet_area_array = np.array(df['magnet_area'].tolist(), dtype=np.float32)
-    # ラベルの正規化（最大値を128にスケーリング）
+    # ラベルの正規化（最大値を255にスケーリング）
     max_val = np.max(magnet_area_array)
-    magnet_area_array = 128 * (magnet_area_array / max_val)
+    magnet_area_array = 255 * (magnet_area_array / max_val)
 
     images = []
     # 画像ファイルを取得し、昇順にソート
@@ -180,12 +180,6 @@ class GAN(keras.Model):
                 grads = gp_tape.gradient(interpolated_output, [discriminator_interpolated_input])[0]
                 # グラデーションがNoneであるかどうかを確認
                 if grads is None:
-                    print(f"real_images shape: {real_images.shape}")
-                    print(f"generated_images shape: {generated_images.shape}")
-                    print(f"interpolated_images shape: {interpolated_images.shape}")
-                    print(f"discriminator_real_input shape: {discriminator_real_input.shape}")
-                    print(f"discriminator_fake_input shape: {discriminator_fake_input.shape}")
-                    print(f"discriminator_interpolated_input shape: {discriminator_interpolated_input.shape}")
                     raise ValueError("グラデーションの計算に失敗しました。グラデーションはNoneです。")
                 norm_grads = tf.sqrt(tf.reduce_sum(tf.square(grads), axis=[1, 2, 3]))
                 gradient_penalty = tf.reduce_mean((norm_grads - 1.0) ** 2)
@@ -235,7 +229,7 @@ class GANMonitor(keras.callbacks.Callback):
             # self.model.discriminator.save_weights(discriminator_weights_path % epoch)
 
             # 各ラベルについて、num_img個の画像を生成
-            for label in [20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120]:
+            for label in [40, 80, 120, 160, 200, 240]:
                 # 当該ラベルの繰り返し
                 labels = tf.constant([label] * self.num_img_per_label, dtype=np.float32)
                 labels = tf.reshape(labels, (self.num_img_per_label, 1))  # ラベルの形状を調整
@@ -281,6 +275,7 @@ if __name__ == "__main__":
     label_path = 'motor/datasets/raw/model0/for_label_data.csv'
     image_dir = 'motor/datasets/64x64'  # データセットのディレクトリ
     images, labels = load_dataset(image_dir, label_path)
+    print(min(labels), max(labels))
     dataset = tf.data.Dataset.from_tensor_slices((images, labels))
     dataset = dataset.shuffle(buffer_size=len(images)).batch(BATCH_SIZE)
 
