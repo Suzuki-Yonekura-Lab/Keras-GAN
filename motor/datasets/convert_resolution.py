@@ -3,7 +3,7 @@ import cv2
 import pandas as pd
 
 # 元のディレクトリのリスト
-source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) for i in range(13)]
+source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) for i in range(2)]
 label_csvs = [f'motor/datasets/raw/model{model}/for_label_data.csv' for model in range(4)]
 
 # 新しいディレクトリ
@@ -44,8 +44,11 @@ for csv_file in label_csvs:
 # データフレームを縦方向に結合
 combined_df = pd.concat(df_list, ignore_index=True)
 
+# SEEDが0, 1, 2, 3のものだけ抽出
+filtered_df = combined_df[combined_df['SEED'].isin([0, 1])]
+
 # 新しいCSVファイルとして保存
 combined_csv_path = os.path.join(target_dir, 'combined_labels.csv')
-combined_df.to_csv(combined_csv_path, index=False)
+filtered_df.to_csv(combined_csv_path, index=False)
 
-print(f"Resized images and combined labels have been saved to {target_dir}")
+print(f"Resized images and filtered labels have been saved to {target_dir}")
