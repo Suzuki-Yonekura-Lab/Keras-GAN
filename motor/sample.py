@@ -21,7 +21,7 @@ if gpus:
 # ハイパーパラメータ
 BATCH_SIZE = 16
 LATENT_DIM = 100
-EPOCHS = 2000
+EPOCHS = 100000
 LAMBDA_GP = 10
 
 
@@ -211,14 +211,15 @@ class GAN(keras.Model):
 
 
 class GANMonitor(keras.callbacks.Callback):
-    def __init__(self, num_img_per_label=1, latent_dim=64, num_classes=1):
+    def __init__(self, dir_name, num_img_per_label=1, latent_dim=64, num_classes=1):
         self.num_img_per_label = num_img_per_label
         self.latent_dim = latent_dim
         self.num_classes = num_classes
+        self.dir_name = dir_name
 
     def on_epoch_end(self, epoch, logs=None):
         if epoch % 10 == 0:
-            path = "motor/output/sample/%04d"
+            path = f"{self.dir_name}/%04d"
             if not os.path.exists(path % epoch):
                 os.makedirs(path % epoch)
 
@@ -229,24 +230,24 @@ class GANMonitor(keras.callbacks.Callback):
             # self.model.discriminator.save_weights(discriminator_weights_path % epoch)
 
             # 各ラベルについて、num_img個の画像を生成
-            for label in [40, 80, 120, 160, 200, 240]:
-                # 当該ラベルの繰り返し
-                labels = tf.constant([label] * self.num_img_per_label, dtype=np.float32)
-                labels = tf.reshape(labels, (self.num_img_per_label, 1))  # ラベルの形状を調整
-
-                # 潜在空間からのランダムベクトル生成
-                random_latent_vectors = tf.random.normal(shape=(self.num_img_per_label, self.latent_dim))
-                generator_input = tf.concat([random_latent_vectors, labels], axis=1)
-
-                # 条件付きで偽画像を生成
-                generated_images = self.model.generator(generator_input, training=False)
-                generated_images = (generated_images * 127.5) + 127.5  # [-1, 1]から[0, 255]へスケール変換
-                generated_images = tf.cast(generated_images, tf.uint8)  # 整数型へ変換
-
-                # 画像を保存
-                for i in range(self.num_img_per_label):
-                    img = keras.preprocessing.image.array_to_img(generated_images[i])
-                    img.save("motor/output/sample/%04d/generated_img_label_%d_%d.png" % (epoch, label, i))
+            # for label in [40, 80, 120, 160, 200, 240]:
+            #     # 当該ラベルの繰り返し
+            #     labels = tf.constant([label] * self.num_img_per_label, dtype=np.float32)
+            #     labels = tf.reshape(labels, (self.num_img_per_label, 1))  # ラベルの形状を調整
+            #
+            #     # 潜在空間からのランダムベクトル生成
+            #     random_latent_vectors = tf.random.normal(shape=(self.num_img_per_label, self.latent_dim))
+            #     generator_input = tf.concat([random_latent_vectors, labels], axis=1)
+            #
+            #     # 条件付きで偽画像を生成
+            #     generated_images = self.model.generator(generator_input, training=False)
+            #     generated_images = (generated_images * 127.5) + 127.5  # [-1, 1]から[0, 255]へスケール変換
+            #     generated_images = tf.cast(generated_images, tf.uint8)  # 整数型へ変換
+            #
+            #     # 画像を保存
+            #     for i in range(self.num_img_per_label):
+            #         img = keras.preprocessing.image.array_to_img(generated_images[i])
+            #         img.save("motor/output/sample/%04d/generated_img_label_%d_%d.png" % (epoch, label, i))
 
 
 class LossCSVLogger(keras.callbacks.Callback):
@@ -271,15 +272,21 @@ if __name__ == "__main__":
     import os
     import numpy as np
 
-    # 新しいデータセットの読み込み
-    label_path = 'motor/datasets/raw/model0/for_label_data.csv'
-    image_dir = 'motor/datasets/64x64'  # データセットのディレクトリ
-    images, labels = load_dataset(image_dir, label_path)
-    print(min(labels), max(labels))
-    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
-    dataset = dataset.shuffle(buffer_size=len(images)).batch(BATCH_SIZE)
+    # name
+    name = '64x64_model0123'
 
-    output_dir = "motor/output/sample"
+    # 新しいデータセットの読み込み
+    # label_path = 'motor/datasets/raw/model0/for_label_data.csv'
+    label_path = f'motor/datasets/{name}/combined_labels.csv'
+    image_dir = f'motor/datasets/{name}'  # データセットのディレクトリ
+    images, labels = load_dataset(image_dir, label_path)
+    print(f'min label: {min(labels)} max label: max(labels)')
+
+    dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+    dataset = dataset.shuffle(buffer_size=len(images)).batch(BATCH_SIZE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+
+    output_dir = f'motor/output/{name}'
+    loss_csv = f'motor/output/{name}/loss_log.csv'
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -300,8 +307,8 @@ if __name__ == "__main__":
         dataset,
         epochs=EPOCHS,
         callbacks=[
-            GANMonitor(latent_dim=LATENT_DIM),
-            LossCSVLogger(filename="motor/output/sample/loss_log.csv")
+            GANMonitor(latent_dim=LATENT_DIM, dir_name=output_dir),
+            LossCSVLogger(filename=loss_csv)
         ],
     )
 
