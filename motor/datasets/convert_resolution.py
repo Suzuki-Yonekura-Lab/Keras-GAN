@@ -3,11 +3,11 @@ import cv2
 import pandas as pd
 
 # 元のディレクトリのリスト
-source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) for i in range(2)]
+source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) for i in range(3)]
 label_csvs = [f'motor/datasets/raw/model{model}/for_label_data.csv' for model in range(4)]
 
 # 新しいディレクトリ
-target_dir = 'motor/datasets/model0123_64x64_binarization'
+target_dir = 'motor/datasets/model0123'
 
 # 新しいディレクトリが存在しない場合は作成
 if not os.path.exists(target_dir):
@@ -26,12 +26,15 @@ for source_dir in source_dirs:
                 # 画像を読み込む
                 img = cv2.imread(file_path)
                 # 画像をリサイズ
-                img_resized = cv2.resize(img, (64, 64))
+                img_resized = cv2.resize(img, (256, 256))
+                # 二値化処理
+                _, img_binarized = cv2.threshold(img_resized, 127, 255, cv2.THRESH_BINARY)
                 # 新しいファイル名
                 new_filename = f'{counter:06}.png'
                 new_file_path = os.path.join(target_dir, new_filename)
-                # リサイズした画像を保存
-                cv2.imwrite(new_file_path, img_resized)
+                # 二値化した画像を保存
+                cv2.imwrite(new_file_path, img_binarized)
+                # cv2.imwrite(new_file_path, img)
                 # カウンターをインクリメント
                 counter += 1
 
@@ -44,8 +47,8 @@ for csv_file in label_csvs:
 # データフレームを縦方向に結合
 combined_df = pd.concat(df_list, ignore_index=True)
 
-# SEEDが0, 1, 2, 3のものだけ抽出
-filtered_df = combined_df[combined_df['SEED'].isin([0, 1])]
+# SEEDが0, 1のものだけ抽出
+filtered_df = combined_df[combined_df['SEED'].isin([0, 1, 2])]
 
 # 新しいCSVファイルとして保存
 combined_csv_path = os.path.join(target_dir, 'combined_labels.csv')
