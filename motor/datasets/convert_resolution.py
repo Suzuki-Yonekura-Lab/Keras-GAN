@@ -7,7 +7,7 @@ source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) 
 label_csvs = [f'motor/datasets/raw/model{model}/for_label_data.csv' for model in range(4)]
 
 # 新しいディレクトリ
-target_dir = 'motor/datasets/64x64_model0123'
+target_dir = 'motor/datasets/model0123_64x64_binarization'
 
 # 新しいディレクトリが存在しない場合は作成
 if not os.path.exists(target_dir):
