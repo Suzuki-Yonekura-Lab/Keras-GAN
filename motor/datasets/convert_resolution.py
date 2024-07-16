@@ -7,7 +7,7 @@ source_dirs = [f'motor/datasets/raw/model{model}/seed{i}' for model in range(4) 
 label_csvs = [f'motor/datasets/raw/model{model}/for_label_data.csv' for model in range(4)]
 
 # 新しいディレクトリ
-target_dir = 'motor/datasets/model0123'
+target_dir = 'motor/datasets/mochu'
 
 # 新しいディレクトリが存在しない場合は作成
 if not os.path.exists(target_dir):
@@ -26,7 +26,7 @@ for source_dir in source_dirs:
                 # 画像を読み込む
                 img = cv2.imread(file_path)
                 # 画像をリサイズ
-                img_resized = cv2.resize(img, (256, 256))
+                img_resized = cv2.resize(img, (64, 64))
                 # 二値化処理
                 _, img_binarized = cv2.threshold(img_resized, 127, 255, cv2.THRESH_BINARY)
                 # 新しいファイル名
